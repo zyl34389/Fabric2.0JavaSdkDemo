@@ -1,0 +1,14 @@
+1.制作通道配置文件
+export CHANNEL_NAME=publicsafety
+configtxgen -profile ThreeOrgsChannel -outputCreateChannelTx /usr/local/home/configtx/channel-artifacts/${CHANNEL_NAME}.tx -channelID ${CHANNEL_NAME}
+2.更新背书节点配置
+# 设置org1配置
+export orgmsp=org1MSP
+configtxgen -profile ThreeOrgsChannel -outputAnchorPeersUpdate /usr/local/home/configtx/channel-artifacts/${orgmsp}anchors.tx -channelID ${CHANNEL_NAME} -asOrg ${orgmsp}
+# 设置org2配置
+export orgmsp=org2MSP
+configtxgen -profile ThreeOrgsChannel -outputAnchorPeersUpdate /usr/local/home/configtx/channel-artifacts/${orgmsp}anchors.tx -channelID ${CHANNEL_NAME} -asOrg ${orgmsp}
+# 设置org3配置
+export orgmsp=org3MSP
+configtxgen -profile ThreeOrgsChannel -outputAnchorPeersUpdate /usr/local/home/configtx/channel-artifacts/${orgmsp}anchors.tx -channelID ${CHANNEL_NAME} -asOrg ${orgmsp}
+3.

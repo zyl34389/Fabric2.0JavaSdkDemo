@@ -1,0 +1,212 @@
+---
+Organizations:
+
+   # 组织
+    - &org0
+        # 组织名称
+        Name: org0MSP
+        # 组织id
+        ID: org0MSP
+
+        # 整合后的org0的admin/msp路径
+        MSPDir: /usr/local/home/configtx/org0/msp
+        # 策略,不能注释掉,注释掉报错找不到策略配置
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('org0MSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('org0MSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('org0MSP.admin')"
+         # order组织的主order地址       
+        OrdererEndpoints:
+            - orderer1-org0.txhy.com:8050
+
+    - &org1
+        # 组织名称
+        Name: org1MSP
+        # 组织id
+        ID: org1MSP
+        # org1组织整合后的admin/msp路径
+        MSPDir: /usr/local/home/configtx/org1/msp
+        # 策略
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('org1MSP.admin', 'org1MSP.peer', 'org1MSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('org1MSP.admin', 'org1MSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('org1MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('org1MSP.peer')"
+
+        AnchorPeers:
+            - Host: peer1-org1.txhy.com
+              Port: 7501
+
+    - &org2
+        Name: org2MSP
+
+        ID: org2MSP
+
+        MSPDir: /usr/local/home/configtx/org2/msp
+
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('org2MSP.admin', 'org2MSP.peer', 'org2MSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('org2MSP.admin', 'org2MSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('org2MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('org2MSP.peer')"
+
+        AnchorPeers:
+            - Host: peer1-org2.txhy.com
+              Port: 7551
+    
+    - &org3
+        Name: org3MSP
+        ID: org3MSP
+        MSPDir: /usr/local/home/configtx/org3/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('org3MSP.admin', 'org3MSP.peer', 'org3MSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('org3MSP.admin', 'org3MSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('org3MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('org3MSP.peer')"
+
+        AnchorPeers:
+            - Host: peer1-org3.txhy.com
+              Port: 7601   
+
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+    Orderer: &OrdererCapabilities
+        V2_0: true
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+Application: &ApplicationDefaults
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+    OrdererType: etcdraft
+    EtcdRaft:
+        # 所有order组织的地址
+        Consenters:
+        - Host: orderer1-org0.txhy.com
+          Port: 8050
+          # 整合后的admin 的tls证书
+          ClientTLSCert: /usr/local/home/org0/orderers/orderer1-org0/tls-msp/signcerts/cert.pem
+          ServerTLSCert: /usr/local/home/org0/orderers/orderer1-org0/tls-msp/signcerts/cert.pem
+          
+        - Host: orderer2-org0.txhy.com
+          Port: 8051
+          ClientTLSCert: /usr/local/home/org0/orderers/orderer2-org0/tls-msp/signcerts/cert.pem
+          ServerTLSCert: /usr/local/home/org0/orderers/orderer2-org0/tls-msp/signcerts/cert.pem
+          
+        - Host: orderer3-org0.txhy.com
+          Port: 8052
+          ClientTLSCert: /usr/local/home/org0/orderers/orderer3-org0/tls-msp/signcerts/cert.pem
+          ServerTLSCert: /usr/local/home/org0/orderers/orderer3-org0/tls-msp/signcerts/cert.pem
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+
+    Capabilities:
+        <<: *ChannelCapabilities
+
+Profiles:
+
+    ThreeOrgsOrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *org0
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                    - *org1
+                    - *org2
+                    - *org3
+    ThreeOrgsChannel:
+        Consortium: SampleConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *org1
+                - *org2
+                - *org3
+            Capabilities:
+                <<: *ApplicationCapabilities

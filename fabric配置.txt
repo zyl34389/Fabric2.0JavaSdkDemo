@@ -1,0 +1,691 @@
+192.168.0.158   peer1-org1.txhy.com
+192.168.0.158   peer2-org1.txhy.com
+192.168.0.158   peer3-org1.txhy.com
+192.168.0.158   cli-org1.txhy.com
+192.168.0.158   orderer1-org0.txhy.com
+192.168.0.158   orderer2-org0.txhy.com
+192.168.0.158   orderer3-org0.txhy.com
+192.168.0.157   peer1-org2.txhy.com
+192.168.0.157   peer2-org2.txhy.com
+192.168.0.157   peer3-org2.txhy.com
+192.168.0.157   peer1-org3.txhy.com
+192.168.0.157   peer2-org3.txhy.com
+192.168.0.157   peer3-org3.txhy.com
+基础环境安装命令
+yum install -y yum-utils device-mapper-persistent-data lvm2 git wget tree
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum install -y epel-release
+yum list docker-ce --showduplicates | sort -r
+yum install docker-ce -y
+systemctl start docker
+systemctl enable docker
+yum install docker-compose -y
+mkdir -p /usr/local/go-tar
+cd /usr/local/go-tar
+wget https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
+tar -zxvf go1.14.4.linux-amd64.tar.gz
+mv ./go  /usr/local
+vim /etc/profile
+export GOROOT=/usr/local/go export GOPATH=/root/go export
+FABRIC_CA_SERVER_HOME=/root/fabric-ca-server export
+FABRIC_CA_CLIENT_HOME=/root/fabric-ca-client export
+PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+source /etc/profile
+export GO111MODULE=on
+export GOPROXY=https://goproxy.cn
+go get -u github.com/hyperledger/fabric-ca/cmd/fabric-ca-client
+go get -u github.com/hyperledger/fabric/cmd/configtxgen
+cd /root/go/bin/
+rm -rf configtxgen
+git clone https://gitee.com/peter_code_git/fabric-utils.git
+cp fabric-utils/* ./
+rm -rf fabric-ca-client
+chmod 777 configtxgen cryptogen
+wget https://github-production-release-asset-2e65be.s3.amazonaws.com/79410323/21ca7b00-0335-11eb-98b9-935eb6082c94?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20201102%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20201102T030740Z&X-Amz-Expires=300&X-Amz-Signature=bef477471e7c8fdb764a26aaf65212429603cb3afe56011674f77add65cdd96f&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=79410323&response-content-disposition=attachment%3B%20filename%3Dhyperledger-fabric-ca-linux-amd64-1.4.9.tar.gz&response-content-type=application%2Foctet-stream
+https://github-production-release-asset-2e65be.s3.amazonaws.com/79410323/21ca7b00-0335-11eb-98b9-935eb6082c94?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20201102%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20201102T030740Z&X-Amz-Expires=300&X-Amz-Signature=bef477471e7c8fdb764a26aaf65212429603cb3afe56011674f77add65cdd96f&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=79410323&response-content-disposition=attachment%3B%20filename%3Dhyperledger-fabric-ca-linux-amd64-1.4.9.tar.gz&response-content-type=application%2Foctet-stream
+
+tar -zxvf hyperledger-fabric-ca-linux-amd64-1.4.9.tar.gz
+cp bin/fabric-ca-* ./
+
+docker swarm init --advertise-addr 192.168.0.158
+docker swarm join-token manager
+docker swarm join --token SWMTKN-1-2ovatt3cmwfpv4bh7k5vep2zqsqwrbhrc85tbe8hpjqkg4pehp-1j8fz0ct3yfqu58e4jckf84cq 192.168.0.158:2377  --advertise-addr 192.168.0.157
+docker network create --attachable --driver overlay dev
+docker network ls
+
+mkdir -p /usr/local/home
+cd /usr/local/home/
+docker-compose -f cas.yaml up -d
+cd /usr/local/home/tls-ca
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://tls-ca-admin.txhy.com:tls-ca-adminpw@0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer1-org1.txhy.com --id.secret peer1PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer2-org1.txhy.com --id.secret peer2PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer3-org1.txhy.com --id.secret peer3PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer1-org2.txhy.com --id.secret peer1PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer2-org2.txhy.com --id.secret peer2PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer3-org2.txhy.com --id.secret peer3PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer1-org3.txhy.com --id.secret peer1PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer2-org3.txhy.com --id.secret peer2PW --id.type peer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name peer3-org3.txhy.com --id.secret peer3PW --id.type peer -u https://0.0.0.0:7052 
+# 注册org1的admin管理员 
+fabric-ca-client register -d --id.name admin-org1.txhy.com --id.secret org1AdminPW --id.type admin -u https://0.0.0.0:7052 
+# 注册org2的admin管理员 
+fabric-ca-client register -d --id.name admin-org2.txhy.com --id.secret org2AdminPW --id.type admin -u https://0.0.0.0:7052 
+# 注册org3的admin管理员 
+fabric-ca-client register -d --id.name admin-org3.txhy.com --id.secret org3AdminPW --id.type admin -u https://0.0.0.0:7052 
+注册order
+fabric-ca-client register -d --id.name orderer1-org0.txhy.com  --id.secret ordererPW --id.type orderer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name orderer2-org0.txhy.com  --id.secret ordererPW --id.type orderer -u https://0.0.0.0:7052 
+fabric-ca-client register -d --id.name orderer3-org0.txhy.com  --id.secret ordererPW --id.type orderer -u https://0.0.0.0:7052
+登录org0的CA服务并注册组件
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org0/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/ca/admin
+fabric-ca-client enroll -d -u https://org0-admin.txhy.com:org0-adminpw@0.0.0.0:7053
+# 注册order1用户
+fabric-ca-client register -d --id.name orderer1-org0.txhy.com --id.secret ordererpw --id.type orderer --id.attrs '"hf.Registrar.Roles=orderer"' -u https://0.0.0.0:7053
+# 注册order2用户
+fabric-ca-client register -d --id.name orderer2-org0.txhy.com --id.secret ordererpw --id.type orderer --id.attrs '"hf.Registrar.Roles=orderer"' -u https://0.0.0.0:7053
+# 注册order3用户
+fabric-ca-client register -d --id.name orderer3-org0.txhy.com --id.secret ordererpw --id.type orderer --id.attrs '"hf.Registrar.Roles=orderer"' -u https://0.0.0.0:7053
+# 注册admin用户
+fabric-ca-client register -d --id.name admin-org0.txhy.com --id.secret org0adminpw --id.type admin --id.attrs "hf.Registrar.Roles=client,hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,admin=true:ecert,abac.init=true:ecert" -u https://0.0.0.0:7053 
+登录org1的CA服务并注册组件
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org1/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org1/ca/admin
+fabric-ca-client enroll -d -u https://org1-admin.txhy.com:org1-adminpw@0.0.0.0:7054 --tls.certfiles /usr/local/home/org1/ca/crypto/ca-cert.pem
+注册org1组织内所有节点,包含peer1,peer2和admin,这里暂时不注册user用户
+# 注意type值的变化
+fabric-ca-client register -d --id.name peer1-org1.txhy.com --id.secret peer1PW --id.type peer -u https://0.0.0.0:7054 
+fabric-ca-client register -d --id.name peer2-org1.txhy.com --id.secret peer2PW --id.type peer -u https://0.0.0.0:7054 
+fabric-ca-client register -d --id.name peer3-org1.txhy.com --id.secret peer3PW --id.type peer -u https://0.0.0.0:7054 
+fabric-ca-client register -d --id.name admin-org1.txhy.com --id.secret org1AdminPW --id.type admin -u https://0.0.0.0:7054
+登录org2的CA服务并注册组件
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org2/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org2/ca/admin
+fabric-ca-client enroll -d -u https://org2-admin.txhy.com:org2-adminpw@0.0.0.0:7055 --tls.certfiles /usr/local/home/org2/ca/crypto/ca-cert.pem
+注册org2内所有节点,包含peer1,peer2和admin
+# 注册 org2组织内的所有节点, 包含 peer1,peer2,admin,注意admin和peer的type值是不同的
+fabric-ca-client register -d --id.name peer1-org2.txhy.com --id.secret peer1PW --id.type peer -u https://0.0.0.0:7055 
+fabric-ca-client register -d --id.name peer2-org2.txhy.com --id.secret peer2PW --id.type peer -u https://0.0.0.0:7055 
+fabric-ca-client register -d --id.name peer3-org2.txhy.com --id.secret peer3PW --id.type peer -u https://0.0.0.0:7055 
+fabric-ca-client register -d --id.name admin-org2.txhy.com --id.secret org2AdminPW --id.type admin -u https://0.0.0.0:7055
+登录org3的CA服务并注册组件
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org3/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org3/ca/admin
+fabric-ca-client enroll -d -u https://org3-admin.txhy.com:org3-adminpw@0.0.0.0:7056 --tls.certfiles /usr/local/home/org3/ca/crypto/ca-cert.pem
+注册org3内所有节点,包含peer1,peer2和admin
+# 注册 org2组织内的所有节点, 包含 peer1,peer2,admin,注意admin和peer的type值是不同的
+fabric-ca-client register -d --id.name peer1-org3.txhy.com --id.secret peer1PW --id.type peer -u https://0.0.0.0:7056 
+fabric-ca-client register -d --id.name peer2-org3.txhy.com --id.secret peer2PW --id.type peer -u https://0.0.0.0:7056 
+fabric-ca-client register -d --id.name peer3-org3.txhy.com --id.secret peer3PW --id.type peer -u https://0.0.0.0:7056 
+fabric-ca-client register -d --id.name admin-org3.txhy.com --id.secret org3AdminPW --id.type admin -u https://0.0.0.0:7056
+
+为org1内的peer节点制作证书
+peer1-org1的msp证书
+# peer1-org1 保存证书的根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org1/peer1
+# 与org1-ca通讯的tls证书,使用的是org1服务启动时生成的证书
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org1/ca/crypto/ca-cert.pem
+# 用于保存peer1-org1的msp证书的目录
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer1-org1.txhy.com:peer1PW@0.0.0.0:7054
+peer1-org1的tls证书
+# 保存peer1-org1的tls证书目录
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+# 使用tls-ca的根证书访问 tls-ca 服务器
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer1-org1.txhy.com:peer1PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer1-org1.txhy.com 
+mv /usr/local/home/org1/peer1/tls-msp/keystore/*_sk /usr/local/home/org1/peer1/tls-msp/keystore/key.pem
+peer2-org1的msp证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org1/peer2
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org1/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer2-org1.txhy.com:peer2PW@0.0.0.0:7054
+peer2-org1的tls证书
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer2-org1.txhy.com:peer2PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer2-org1.txhy.com
+mv /usr/local/home/org1/peer2/tls-msp/keystore/*_sk  /usr/local/home/org1/peer2/tls-msp/keystore/key.pem
+peer3-org1的msp证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org1/peer3
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org1/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer3-org1.txhy.com:peer3PW@0.0.0.0:7054
+peer3-org1的tls证书
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer3-org1.txhy.com:peer3PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer3-org1.txhy.com
+mv /usr/local/home/org1/peer3/tls-msp/keystore/*_sk  /usr/local/home/org1/peer3/tls-msp/keystore/key.pem
+org1管理员admin的msp证书
+# 设置org1的管理员admin保存证书的根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org1/admin
+# 使用org1-ca的证书用于与org1-ca服务器通讯
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org1/ca/crypto/ca-cert.pem
+# 设置org1的管理员admin的证书目录
+export FABRIC_CA_CLIENT_MSPDIR=msp
+登录到org1-ca服务器,会在/usr/local/home/org1目录下生成admin文件夹
+fabric-ca-client enroll -d -u https://admin-org1.txhy.com:org1AdminPW@0.0.0.0:7054 
+org1管理员admin的tls证书
+# 指定admin-org1的tls证书目录
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+# 使用tls-ca服务启动时生成的证书,用于与tls-ca服务器通讯
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+登录后会再/usr/local/home/org1/admin目录下生成tls-msp目录
+fabric-ca-client enroll -d -u https://admin-org1.txhy.com:org1AdminPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts admin-org1.txhy.com 
+mv /usr/local/home/org1/admin/tls-msp/keystore/*_sk /usr/local/home/org1/admin/tls-msp/keystore/key.pem
+
+颁发peer1-org1的管理员证书
+mkdir -p /usr/local/home/org1/peer1/msp/admincerts && cp /usr/local/home/org1/admin/msp/signcerts/cert.pem /usr/local/home/org1/peer1/msp/admincerts/org1-admin-cert.pem 
+颁发peer2-org1的管理员证书
+mkdir -p /usr/local/home/org1/peer2/msp/admincerts && cp /usr/local/home/org1/admin/msp/signcerts/cert.pem /usr/local/home/org1/peer2/msp/admincerts/org1-admin-cert.pem 
+颁发peer3-org1的管理员证书
+mkdir -p /usr/local/home/org1/peer3/msp/admincerts && cp /usr/local/home/org1/admin/msp/signcerts/cert.pem /usr/local/home/org1/peer3/msp/admincerts/org1-admin-cert.pem
+
+peer1-org2的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org2/peer1
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org2/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer1-org2.txhy.com:peer1PW@0.0.0.0:7055
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer1-org2.txhy.com:peer1PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer1-org2.txhy.com 
+mv /usr/local/home/org2/peer1/tls-msp/keystore/*_sk /usr/local/home/org2/peer1/tls-msp/keystore/key.pem
+peer2-org2的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org2/peer2
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org2/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer2-org2.txhy.com:peer2PW@0.0.0.0:7055
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer2-org2.txhy.com:peer2PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer2-org2.txhy.com 
+mv /usr/local/home/org2/peer2/tls-msp/keystore/*_sk /usr/local/home/org2/peer2/tls-msp/keystore/key.pem
+peer3-org2的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org2/peer3
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org2/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer3-org2.txhy.com:peer3PW@0.0.0.0:7055
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer3-org2.txhy.com:peer3PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer3-org2.txhy.com 
+mv /usr/local/home/org2/peer3/tls-msp/keystore/*_sk /usr/local/home/org2/peer3/tls-msp/keystore/key.pem
+admin-org2的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org2/admin
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org2/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://admin-org2.txhy.com:org2AdminPW@0.0.0.0:7055
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://admin-org2.txhy.com:org2AdminPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts admin-org2.txhy.com 
+mv /usr/local/home/org2/admin/tls-msp/keystore/*_sk /usr/local/home/org2/admin/tls-msp/keystore/key.pem
+颁发peer1-org2的管理员证书
+mkdir -p /usr/local/home/org2/peer1/msp/admincerts && cp /usr/local/home/org2/admin/msp/signcerts/cert.pem /usr/local/home/org2/peer1/msp/admincerts/org2-admin-cert.pem
+颁发peer2-org2的管理员证书
+mkdir -p /usr/local/home/org2/peer2/msp/admincerts && cp /usr/local/home/org2/admin/msp/signcerts/cert.pem /usr/local/home/org2/peer2/msp/admincerts/org2-admin-cert.pem
+颁发peer3-org2的管理员证书
+mkdir -p /usr/local/home/org2/peer3/msp/admincerts && cp /usr/local/home/org2/admin/msp/signcerts/cert.pem /usr/local/home/org2/peer3/msp/admincerts/org2-admin-cert.pem
+
+peer1-org3的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org3/peer1
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org3/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer1-org3.txhy.com:peer1PW@0.0.0.0:7056
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer1-org3.txhy.com:peer1PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer1-org3.txhy.com 
+mv /usr/local/home/org3/peer1/tls-msp/keystore/*_sk /usr/local/home/org3/peer1/tls-msp/keystore/key.pem
+peer2-org3的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org3/peer2
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org3/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer2-org3.txhy.com:peer2PW@0.0.0.0:7056
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer2-org3.txhy.com:peer2PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer2-org3.txhy.com 
+mv /usr/local/home/org3/peer2/tls-msp/keystore/*_sk /usr/local/home/org3/peer2/tls-msp/keystore/key.pem
+peer3-org3的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org3/peer3
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org3/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://peer3-org3.txhy.com:peer3PW@0.0.0.0:7056
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://peer3-org3.txhy.com:peer3PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer3-org3.txhy.com 
+mv /usr/local/home/org3/peer3/tls-msp/keystore/*_sk /usr/local/home/org3/peer3/tls-msp/keystore/key.pem
+admin-org3的msp和tls证书
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org3/admin
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org3/ca/crypto/ca-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://admin-org3.txhy.com:org3AdminPW@0.0.0.0:7056
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://admin-org3.txhy.com:org3AdminPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts admin-org3.txhy.com 
+mv /usr/local/home/org3/admin/tls-msp/keystore/*_sk /usr/local/home/org3/admin/tls-msp/keystore/key.pem
+颁发peer1-org3的管理员证书
+mkdir -p /usr/local/home/org3/peer1/msp/admincerts && cp /usr/local/home/org3/admin/msp/signcerts/cert.pem /usr/local/home/org3/peer1/msp/admincerts/org3-admin-cert.pem
+颁发peer2-org3的管理员证书
+mkdir -p /usr/local/home/org3/peer2/msp/admincerts && cp /usr/local/home/org3/admin/msp/signcerts/cert.pem /usr/local/home/org3/peer2/msp/admincerts/org3-admin-cert.pem
+颁发peer3-org3的管理员证书
+mkdir -p /usr/local/home/org3/peer3/msp/admincerts && cp /usr/local/home/org3/admin/msp/signcerts/cert.pem /usr/local/home/org3/peer3/msp/admincerts/org3-admin-cert.pem
+
+为org0内的orderer节点制作证书
+mkdir -p /usr/local/home/org0/orderers
+orderer1-org0的msp证书
+# 设置orderer1-org0的msp证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/orderers/orderer1-org0
+# 使用org0-ca服务器的证书
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org0/ca/crypto/ca-cert.pem
+# 设置orderer1-org0的msp证书目录
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://orderer1-org0.txhy.com:ordererpw@0.0.0.0:7053
+orderer1-org0的tls证书
+# 设置orderer1-org0的tls证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/orderers/orderer1-org0
+# 设置orderer1-org0的tls证书目录
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+# 使用tls-ca服务器启动时生成的证书与tls-ca服务器通讯
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://orderer1-org0.txhy.com:ordererPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts orderer1-org0.txhy.com 
+mv /usr/local/home/org0/orderers/orderer1-org0/tls-msp/keystore/*_sk /usr/local/home/org0/orderers/orderer1-org0/tls-msp/keystore/key.pem
+
+admin-org0的msp证书
+# 设置admin-org0的证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/admin
+# 使用org0-ca服务器启动时生成的证书与org0-ca服务器通讯
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org0/ca/crypto/ca-cert.pem
+# 设置admin-org0的msp证书目录
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://admin-org0.txhy.com:org0adminpw@0.0.0.0:7053
+
+颁发orderer1-org0的管理员证书
+mkdir /usr/local/home/org0/orderers/orderer1-org0/msp/admincerts
+cp /usr/local/home/org0/admin/msp/signcerts/cert.pem /usr/local/home/org0/orderers/orderer1-org0/msp/admincerts/orderer-admin-cert.pem
+orderer2-org0和orderer3-org0的msp和tls证书
+# 设置orderer2-org0的msp证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/orderers/orderer2-org0
+# 使用org0-ca服务器的证书
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org0/ca/crypto/ca-cert.pem
+# 设置orderer2-org0的msp证书目录
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://orderer2-org0.txhy.com:ordererpw@0.0.0.0:7053
+# 设置orderer2-org0的tls证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/orderers/orderer2-org0
+# 设置orderer2-org0的tls证书目录
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+# 使用tls-ca服务器启动时生成的证书与tls-ca服务器通讯
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://orderer2-org0.txhy.com:ordererPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts orderer2-org0.txhy.com 
+mv /usr/local/home/org0/orderers/orderer2-org0/tls-msp/keystore/*_sk /usr/local/home/org0/orderers/orderer2-org0/tls-msp/keystore/key.pem
+mkdir /usr/local/home/org0/orderers/orderer2-org0/msp/admincerts
+cp /usr/local/home/org0/admin/msp/signcerts/cert.pem /usr/local/home/org0/orderers/orderer2-org0/msp/admincerts/orderer-admin-cert.pem
+# 设置orderer3-org0的msp证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/orderers/orderer3-org0
+# 使用org0-ca服务器的证书
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/org0/ca/crypto/ca-cert.pem
+# 设置orderer3-org0的msp证书目录
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://orderer3-org0.txhy.com:ordererpw@0.0.0.0:7053
+# 设置orderer3-org0的tls证书根目录
+export FABRIC_CA_CLIENT_HOME=/usr/local/home/org0/orderers/orderer3-org0
+# 设置orderer3-org0的tls证书目录
+export FABRIC_CA_CLIENT_MSPDIR=tls-msp
+# 使用tls-ca服务器启动时生成的证书与tls-ca服务器通讯
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/usr/local/home/tls-ca/crypto/ca-cert.pem
+fabric-ca-client enroll -d -u https://orderer3-org0.txhy.com:ordererPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts orderer3-org0.txhy.com 
+mv /usr/local/home/org0/orderers/orderer3-org0/tls-msp/keystore/*_sk /usr/local/home/org0/orderers/orderer3-org0/tls-msp/keystore/key.pem
+mkdir /usr/local/home/org0/orderers/orderer3-org0/msp/admincerts
+cp /usr/local/home/org0/admin/msp/signcerts/cert.pem /usr/local/home/org0/orderers/orderer3-org0/msp/admincerts/orderer-admin-cert.pem
+
+编写config.yaml配置文件
+config.yaml文件需要复制每个组织下的所有msp目录下
+
+各个组织的admin证书整合
+mkdir -p /usr/local/home/configtx/org0
+cp -r /usr/local/home/org0/admin/msp /usr/local/home/configtx/org0
+
+mkdir /usr/local/home/configtx/org0/msp/tlscacerts 
+cp  /usr/local/home/org0/orderers/orderer1-org0/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem  /usr/local/home/configtx/org0/msp/tlscacerts
+
+整合org1的admin证书
+mkdir -p /usr/local/home/configtx/org1  && cp -r /usr/local/home/org1/admin/msp /usr/local/home/configtx/org1/
+mkdir -p /usr/local/home/configtx/org1/msp/tlscacerts && cp /usr/local/home/org1/admin/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem /usr/local/home/configtx/org1/tlscacerts
+
+整合org2的admin证书
+mkdir -p /usr/local/home/configtx/org2 && cp -r /usr/local/home/org2/admin/msp /usr/local/home/configtx/org2/
+mkdir -p /usr/local/home/configtx/org2/msp/tlscacerts && cp /usr/local/home/org2/admin/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem /usr/local/home/configtx/org2/tlscacerts
+
+整合org3的admin证书
+mkdir -p /usr/local/home/configtx/org3 && cp -r /usr/local/home/org3/admin/msp /usr/local/home/configtx/org3/
+mkdir -p /usr/local/home/configtx/org3/msp/tlscacerts && cp /usr/local/home/org3/admin/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem /usr/local/home/configtx/org3/tlscacerts
+
+编写configtx.yaml文件
+cd /usr/local/home/configtx
+
+制作创世区块
+mkdir -p /usr/local/home/configtx/{block,channel-artifacts}
+configtxgen -profile ThreeOrgsOrdererGenesis -channelID system-channel -outputBlock /usr/local/home/configtx/block/genesis.block
+
+制作通道配置文件
+export CHANNEL_NAME=publicsafety
+export SEQUENCE=3
+export CHANNEL_NAME=business
+export SEQUENCE=2
+export CHANNEL_NAME=operator
+export SEQUENCE=6
+
+configtxgen -profile ThreeOrgsChannel -outputCreateChannelTx /usr/local/home/configtx/channel-artifacts/${CHANNEL_NAME}.tx -channelID ${CHANNEL_NAME}
+
+
+更新背书节点配置
+# 设置org1配置
+export orgmsp=org1MSP
+configtxgen -profile ThreeOrgsChannel -outputAnchorPeersUpdate /usr/local/home/configtx/channel-artifacts/${orgmsp}anchors.tx -channelID ${CHANNEL_NAME} -asOrg ${orgmsp}
+# 设置org2配置
+export orgmsp=org2MSP
+configtxgen -profile ThreeOrgsChannel -outputAnchorPeersUpdate /usr/local/home/configtx/channel-artifacts/${orgmsp}anchors.tx -channelID ${CHANNEL_NAME} -asOrg ${orgmsp}
+# 设置org3配置
+export orgmsp=org3MSP
+configtxgen -profile ThreeOrgsChannel -outputAnchorPeersUpdate /usr/local/home/configtx/channel-artifacts/${orgmsp}anchors.tx -channelID ${CHANNEL_NAME} -asOrg ${orgmsp}
+
+启动fabric网络编写docker-compose文件
+
+启动fabric网络
+docker-compose -f order.yaml up -d
+docker-compose -f peer.yaml up -d
+
+下载镜像
+docker pull hyperledger/fabric-javaenv:2.0
+docker pull hyperledger/fabric-ccenv:2.0 
+
+修改javaenv镜像
+mkdir Docker
+cd Docker
+docker build -t hyperledger/fabric-havaenc:2.0 .
+
+进入cli客户端
+docker exec -it cli-org1.txhy.com bash
+
+peer1-org1的环境变量
+cd /usr/local/home/configtx
+CORE_PEER_MSPCONFIGPATH=/usr/local/home/org1/admin/msp
+CORE_PEER_ADDRESS=peer1-org1.txhy.com:7501
+CORE_PEER_LOCALMSPID="org1MSP"
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+export ORDERPEM=/usr/local/home/org0/orderers/orderer1-org0/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer2-org1 的证书
+CORE_PEER_ADDRESS=peer2-org1.txhy.com:7502
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org1/peer2/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org1/peer2/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org1/peer2/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer3-org1 的证书
+CORE_PEER_ADDRESS=peer3-org1.txhy.com:7503
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org1/peer3/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org1/peer3/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org1/peer3/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer1-org2的证书 
+CORE_PEER_LOCALMSPID=org2MSP
+CORE_PEER_ADDRESS=peer1-org2.txhy.com:7551
+CORE_PEER_MSPCONFIGPATH=/usr/local/home/org2/admin/msp
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org2/peer1/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org2/peer1/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer2-org2 的证书
+CORE_PEER_ADDRESS=peer2-org2.txhy.com:7552
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org2/peer2/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org2/peer2/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org2/peer2/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer3-org2 的证书
+CORE_PEER_ADDRESS=peer3-org2.txhy.com:7553
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org2/peer3/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org2/peer3/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org2/peer3/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer1-org3的证书 
+CORE_PEER_LOCALMSPID=org3MSP
+CORE_PEER_ADDRESS=peer1-org3.txhy.com:7601
+CORE_PEER_MSPCONFIGPATH=/usr/local/home/org3/admin/msp
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org3/peer1/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org3/peer1/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer2-org3 的证书
+CORE_PEER_ADDRESS=peer2-org3.txhy.com:7602
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org3/peer2/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org3/peer2/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org3/peer2/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer3-org3 的证书
+CORE_PEER_ADDRESS=peer3-org3.txhy.com:7603
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org3/peer3/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org3/peer3/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org3/peer3/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+
+创建通道命令
+export CHANNEL_NAME=txhygd
+peer channel create -o orderer1-org0.txhy.com:8050 -c $CHANNEL_NAME -f ./channel-artifacts/${CHANNEL_NAME}.tx --tls true --cafile $ORDERPEM
+
+加入通道
+peer channel join -b $CHANNEL_NAME.block 
+
+# 将peer1-org1 设置为背书节点
+peer channel update -o orderer1-org0.txhy.com:8050 -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls true --cafile $ORDERPEM
+
+
+链码环境变量
+# 链码的目录
+export CC_SRC_PATH=/usr/local/home/publicsafety
+# 链码的开发语言 可以使用go node java
+export CC_RUNTIME_LANGUAGE=java
+# 通道名称
+export CHANNEL_NAME=mychannel
+# 链码版本号,可以随意定义
+export VERSION=1
+# 链码提交次数,这个参数必须从1开始,每次部署链码时,必须加1
+export SEQUENCE=1
+# order的tls证书
+export ORDERPEM=/usr/local/home/org0/orderers/orderer1-org0/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+打包链码
+peer lifecycle chaincode package operatorgo.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label operatorgo_${VERSION}
+# 安装链码
+peer lifecycle chaincode install operatorgo.tar.gz
+查询链码id
+peer lifecycle chaincode queryinstalled 
+将链码id设置变量
+export CC_PACKAGE_ID=operator_1:58192391c389ddba4ae534a41934ece326623cc5dd51f4fba3a2986cc8178e45
+审批链码
+peer lifecycle chaincode approveformyorg -o orderer1-org0.txhy.com:8050 --channelID $CHANNEL_NAME --name operatorgo --version $VERSION --init-required --package-id $CC_PACKAGE_ID --sequence $SEQUENCE --tls true --cafile $ORDERPEM 
+查询链码审批状态
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name operatorgo --version $VERSION  --init-required --sequence $SEQUENCE --tls true --cafile $ORDERPEM --output json 
+提交链码
+peer lifecycle chaincode commit -o orderer1-org0.txhy.com:8050 --channelID $CHANNEL_NAME --name operatorgo --version $VERSION --sequence $SEQUENCE --init-required --tls true --cafile $ORDERPEM --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem  --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+查询已经提交的链码
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name operatorgo
+实例化链码（三节点）
+peer chaincode invoke -o orderer1-org0.txhy.com:8050 --isInit --tls true --cafile $ORDERPEM -C $CHANNEL_NAME -n operatorgo --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem  -c '{"Args":["Init","a","100","b","100"]}' --waitForEvent 
+查询
+peer chaincode query -C $CHANNEL_NAME -n operatorgo -c '{"Args":["query","a"]}' 
+实例化链码（双节点）
+peer chaincode invoke -o orderer1-org0.txhy.com:8050 --isInit --tls true --cafile $ORDERPEM -C $CHANNEL_NAME -n mycc --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem  -c '{"Args":["Init","a","100","b","100"]}' --waitForEvent 
+
+
+安装go链码
+进入cli客户端
+docker exec -it cli-org1.txhy.com bash
+环境变量
+# 回到工作目录下
+cd /usr/local/home
+# 链码的目录
+export CC_SRC_PATH=/usr/local/home/operatorgo
+# 链码的开发语言 可以使用go node java
+export CC_RUNTIME_LANGUAGE=golang
+# 通道名称
+export CHANNEL_NAME=kk
+export SEQUENCE=7
+export CHANNEL_NAME=business
+export SEQUENCE=2
+export CHANNEL_NAME=operator
+export SEQUENCE=11
+# 链码版本号,可以随意定义
+export VERSION=1
+# 链码提交次数,这个参数必须从1开始,每次部署链码时,必须加1
+export SEQUENCE=1
+# order的tls证书
+export ORDERPEM=/usr/local/home/org0/orderers/orderer1-org0/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+peer节点环境变量
+peer1-org1的证书
+CORE_PEER_MSPCONFIGPATH=/usr/local/home/org1/admin/msp
+CORE_PEER_ADDRESS=peer1-org1.txhy.com:7501
+CORE_PEER_LOCALMSPID="org1MSP"
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer1-org2的证书 
+CORE_PEER_LOCALMSPID=org2MSP
+CORE_PEER_ADDRESS=peer1-org2.txhy.com:7551
+CORE_PEER_MSPCONFIGPATH=/usr/local/home/org2/admin/msp
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org2/peer1/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org2/peer1/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+
+peer1-org3的证书 
+CORE_PEER_LOCALMSPID=org3MSP
+CORE_PEER_ADDRESS=peer1-org3.txhy.com:7601
+CORE_PEER_MSPCONFIGPATH=/usr/local/home/org3/admin/msp
+CORE_PEER_TLS_CERT_FILE=/usr/local/home/org3/peer1/tls-msp/signcerts/cert.pem
+CORE_PEER_TLS_KEY_FILE=/usr/local/home/org3/peer1/tls-msp/keystore/key.pem
+CORE_PEER_TLS_ROOTCERT_FILE=/usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+# 切换到链码文件内
+cd operatorgo/
+# 设置goproxy中国
+go env -w GOPROXY=https://goproxy.cn,direct
+go env -w GO111MODULE=on
+# 初始化module
+go mod init operatorgo(链码名)
+# 检测依赖
+go mod tidy
+# 下载依赖
+go mod download
+# 导入依赖
+go mod vendor
+# 回到工作目录下
+cd /usr/local/home
+# 打包链码
+peer lifecycle chaincode package operatorgo.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label operatorgo_${VERSION}
+# 安装链码
+peer lifecycle chaincode install operatorgo.tar.gz
+查询链码id
+peer lifecycle chaincode queryinstalled 
+将链码id设置变量
+export CC_PACKAGE_ID=operatorgo_1:50e67c577b00106d3247659906e5c07f3e4888e491438612f255239f18332d5e
+审批链码
+peer lifecycle chaincode approveformyorg -o orderer1-org0.txhy.com:8050 --channelID $CHANNEL_NAME --name operatorgo --version $VERSION --init-required --package-id $CC_PACKAGE_ID --sequence $SEQUENCE --tls true --cafile $ORDERPEM 
+查询链码审批状态
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name operatorgo --version $VERSION  --init-required --sequence $SEQUENCE --tls true --cafile $ORDERPEM --output json 
+提交链码
+peer lifecycle chaincode commit -o orderer1-org0.txhy.com:8050 --channelID $CHANNEL_NAME --name operatorgo --version $VERSION --sequence $SEQUENCE --init-required --tls true --cafile $ORDERPEM --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem  --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem
+查询已经提交的链码
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name operatorgo
+实例化链码（三节点）
+peer chaincode invoke -o orderer1-org0.txhy.com:8050 --isInit --tls true --cafile $ORDERPEM -C $CHANNEL_NAME -n operatorgo --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem  -c '{"Args":["Init","a","100","b","100"]}' --waitForEvent 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+peer chaincode invoke -o orderer1-org0.txhy.com:8050 --tls true --cafile $ORDERPEM -C $CHANNEL_NAME -n mycc --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem -c '{"Args":["invoke","a","b","10"]}' --waitForEvent
+
+peer chaincode invoke -o orderer1-org0.txhy.com:8050 --tls true --cafile $ORDERPEM -C $CHANNEL_NAME -n mycc  --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org3.txhy.com:7601 --tlsRootCertFiles /usr/local/home/org3/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem -c '{"Args":["invoke","a","b","10"]}' --waitForEvent
+
+peer chaincode invoke -o orderer1-org0.txhy.com:8050 --tls true --cafile $ORDERPEM -C $CHANNEL_NAME -n mycc --peerAddresses peer1-org1.txhy.com:7501 --tlsRootCertFiles /usr/local/home/org1/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem --peerAddresses peer1-org2.txhy.com:7551 --tlsRootCertFiles /usr/local/home/org2/peer1/tls-msp/tlscacerts/tls-0-0-0-0-7052.pem -c '{"Args":["invoke","a","b","10"]}' --waitForEvent
+
+
+
+
+
+
+ALTER USER postgres WITH PASSWORD 'Txhy2020'
+
+
+
+
+
+
+
+
+
+peer chaincode query -C $CHANNEL_NAME -n operatorgo -c '{"Args":["get","a"]}' 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
